@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: trustlens-ai
+    runtime: node
+    rootDir: trustlens-ai
+    buildCommand: npm install && npm run build:render
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+    autoDeploy: true
