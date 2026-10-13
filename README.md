@@ -159,7 +159,6 @@ Suggested tables:
 - `federated_rounds` — learning-round metadata.
 - `audit_logs` — security and administrative events.
 
-Every company-owned record should have a company identifier. The backend must validate access for every protected read or write operation.
 
 ## 13. Example API Endpoints
 
