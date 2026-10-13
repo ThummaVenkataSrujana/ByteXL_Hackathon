@@ -10,6 +10,8 @@ interface AuthContextType {
   pendingUser: User | null;
   loginError: string | null;
   loginWarning: string | null;
+  viewRole: 'owner' | 'employee';
+  setViewRole: (role: 'owner' | 'employee') => void;
   verifyDevice: (usePasskey: boolean) => Promise<boolean>;
   submitCredentials: (email: string, pass: string) => Promise<{ success: boolean; requiresDeviceVerify?: boolean; error?: string }>;
   logout: () => void;
@@ -23,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const STORAGE_KEY_AUTH = 'trustlens_auth_user';
 const STORAGE_KEY_USERS = 'trustlens_users_db';
+const STORAGE_KEY_ROLE = 'trustlens_view_role';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [allUsers, setAllUsers] = useState<User[]>(() => {
@@ -53,6 +56,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [pendingUser, setPendingUser] = useState<User | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginWarning, setLoginWarning] = useState<string | null>(null);
+
+  const [viewRole, setViewRoleState] = useState<'owner' | 'employee'>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_ROLE);
+      return saved === 'employee' ? 'employee' : 'owner';
+    } catch {
+      return 'owner';
+    }
+  });
+
+  const setViewRole = (role: 'owner' | 'employee') => {
+    setViewRoleState(role);
+    try {
+      localStorage.setItem(STORAGE_KEY_ROLE, role);
+    } catch {}
+  };
 
   // Sync users to storage
   useEffect(() => {
@@ -232,6 +251,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         pendingUser,
         loginError,
         loginWarning,
+        viewRole,
+        setViewRole,
         submitCredentials,
         verifyDevice,
         cancelDeviceVerification,

@@ -59,15 +59,17 @@ function AppContent() {
     );
   }
 
-  // Render Login Page
-  if (!isAuthenticated || currentView === 'login') {
+  // Render Login Page only when explicitly navigated to (demo mode — no forced redirect)
+  if (currentView === 'login') {
     return (
       <LoginPage
         onSuccess={() => setCurrentView('dashboard')}
         onGoToRegister={() => setCurrentView('login')}
+        onBackToDashboard={() => setCurrentView('dashboard')}
       />
     );
   }
+
 
   return (
     <div className="min-h-screen bg-transparent text-slate-900 flex flex-col antialiased relative">

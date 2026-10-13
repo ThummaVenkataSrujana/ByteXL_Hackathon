@@ -12,21 +12,26 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
-  const { currentCompany } = useAuth();
+  const { currentCompany, viewRole } = useAuth();
 
-  const navItems = [
-    { id: 'dashboard', label: 'Security Dashboard', icon: LayoutDashboard },
-    { id: 'registry', label: 'Brand Trust Registry', icon: Building2 },
-    { id: 'scanner', label: 'AI Threat Scanner', icon: ShieldAlert },
-    { id: 'reports', label: 'Fraud Reporting Center', icon: Flag },
-    { id: 'passport', label: 'Evidence Passport', icon: FileCheck2 },
-    { id: 'blocklist', label: 'Enterprise Blocklist', icon: Ban },
-    { id: 'protected', label: 'Protected Browsing', icon: Globe2 },
-    { id: 'risk', label: 'Login Risk Monitor', icon: UserX },
-    { id: 'federated', label: 'Federated Learning', icon: Network },
-    { id: 'audit', label: 'Audit Trail Logs', icon: History },
-    { id: 'settings', label: 'System Settings', icon: Settings },
+  const allNavItems = [
+    { id: 'dashboard', label: 'Security Dashboard', icon: LayoutDashboard, ownerOnly: false },
+    { id: 'registry', label: 'Brand Trust Registry', icon: Building2, ownerOnly: true },
+    { id: 'scanner', label: 'AI Threat Scanner', icon: ShieldAlert, ownerOnly: false },
+    { id: 'reports', label: 'Fraud Reporting Center', icon: Flag, ownerOnly: false },
+    { id: 'passport', label: 'Evidence Passport', icon: FileCheck2, ownerOnly: true },
+    { id: 'blocklist', label: 'Enterprise Blocklist', icon: Ban, ownerOnly: true },
+    { id: 'protected', label: 'Protected Browsing', icon: Globe2, ownerOnly: false },
+    { id: 'risk', label: 'Login Risk Monitor', icon: UserX, ownerOnly: true },
+    { id: 'federated', label: 'Federated Learning', icon: Network, ownerOnly: true },
+    { id: 'audit', label: 'Audit Trail Logs', icon: History, ownerOnly: true },
+    { id: 'settings', label: 'System Settings', icon: Settings, ownerOnly: false },
   ];
+
+  const navItems = viewRole === 'owner'
+    ? allNavItems
+    : allNavItems.filter(item => !item.ownerOnly);
+
 
   return (
     <aside className="w-64 border-r border-slate-200 bg-white flex flex-col shrink-0 min-h-[calc(100vh-4rem)] shadow-2xs">

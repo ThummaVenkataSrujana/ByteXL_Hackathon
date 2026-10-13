@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Shield, Bell, User as UserIcon, LogOut, ChevronDown, Check,
-  AlertTriangle, Key, ExternalLink, Sparkles
+  AlertTriangle, Key, ExternalLink, Sparkles, Crown, UserRound, RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -14,7 +14,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, onOpenChat }) => {
-  const { currentUser, currentCompany, logout, switchUserQuick } = useAuth();
+  const { currentUser, currentCompany, logout, switchUserQuick, viewRole } = useAuth();
   const { alerts, acknowledgeAlert } = useData();
 
   const [showAlertsDropdown, setShowAlertsDropdown] = useState(false);
@@ -100,7 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, onOpenC
       </div>
 
       {/* Zone 2: Navigation Links (Breadcrumb / Status context) */}
-      <nav className="hidden lg:flex items-center gap-6 text-xs text-slate-500">
+      <nav className="hidden lg:flex items-center gap-4 text-xs text-slate-500">
         <span className="text-slate-400">Workspace /</span>
         <span className="text-slate-900 font-semibold capitalize">
           {currentView.replace('-', ' ')}
@@ -110,9 +110,26 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, onOpenC
           User: <span className="text-slate-900 font-medium">{currentUser?.full_name}</span>
         </span>
         <span className="text-slate-300" aria-hidden="true">·</span>
-        <span className="text-slate-600 capitalize">
-          Role: <span className="text-indigo-600 font-semibold">{currentUser?.role.replace('_', ' ')}</span>
+        {/* Role Mode Badge */}
+        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
+          viewRole === 'owner'
+            ? 'text-indigo-700 bg-indigo-50 border-indigo-200'
+            : 'text-sky-700 bg-sky-50 border-sky-200'
+        }`}>
+          {viewRole === 'owner'
+            ? <Crown className="w-3 h-3" />
+            : <UserRound className="w-3 h-3" />}
+          {viewRole === 'owner' ? 'Owner Mode' : 'Employee Mode'}
         </span>
+        {/* Switch Role Button */}
+        <button
+          onClick={() => onNavigate('login')}
+          title="Switch role or log in as a different user"
+          className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-700 px-2 py-0.5 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+        >
+          <RefreshCw className="w-3 h-3" />
+          Switch Role
+        </button>
       </nav>
 
       {/* Zone 3: Actions (Gateway Proxy Status, Chat Trigger, Alerts, User Profile) */}
