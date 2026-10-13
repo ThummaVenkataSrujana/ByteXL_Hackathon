@@ -1,0 +1,184 @@
+# Member 3 — AI Security: Threat Detection & Protected Browsing
+
+**Domain:** AI Threat Scanner, Protected Browsing Gateway, Enterprise Blocklist, Sentinel AI Chatbot, Gemini API Integration, Scanner Engine
+
+---
+
+## Your Assigned Source Files
+
+> Edit ONLY these files. Do not touch files outside this list without team agreement.
+
+###  Pages
+
+| File | Full Path | Description |
+|------|-----------|-------------|
+| `ThreatScannerPage.tsx` | `trustlens-ai/src/pages/ThreatScannerPage.tsx` | AI-powered multi-vector threat scanner — supports 7 indicator types, OSINT simulation, risk scoring, evidence reporting |
+| `ProtectedBrowsingPage.tsx` | `trustlens-ai/src/pages/ProtectedBrowsingPage.tsx` | Real-time URL interception gateway — blocklist check, risk badge, safe/bypass decision flow |
+| `BlocklistPage.tsx` | `trustlens-ai/src/pages/BlocklistPage.tsx` | Enterprise blocklist management — search, view, unblock indicators, open in protected browsing |
+
+###  Components
+
+| File | Full Path | Description |
+|------|-----------|-------------|
+| `SentinelChatbot.tsx` | `trustlens-ai/src/components/chatbot/SentinelChatbot.tsx` | Floating 24/7 AI chatbot — builds live ChatContext, calls Gemini API, displays action proposals (block URL, send alert, restrict user) |
+
+###  Services
+
+| File | Full Path | Description |
+|------|-----------|-------------|
+| `scannerService.ts` | `trustlens-ai/src/services/scannerService.ts` | Core threat scoring engine — URL normalization, homoglyph detection, suspicious TLD/keyword scoring, OSINT simulation, ScanResult builder |
+| `geminiService.ts` | `trustlens-ai/src/services/geminiService.ts` | Gemini API client — `askSentinel()` function, `ChatContext` + `ChatResponse` interfaces, intelligent fallback response engine |
+
+###  Backend
+
+| File | Full Path | Description |
+|------|-----------|-------------|
+| `server.ts` | `trustlens-ai/server.ts` | Express backend server — Gemini SDK initialization, `/api/gemini/chat` POST endpoint, Vite dev server proxy |
+
+---
+
+## Your Responsibilities
+
+### 1. Threat Scanner (`ThreatScannerPage.tsx`)
+
+Supports **7 indicator types:**
+- `url` — website/domain analysis
+- `email` — phishing email address detection
+- `phone` — vishing/smishing phone number analysis
+- `social` — fake social media handle detection
+- `app` — copycat mobile application detection
+- `qr` — malicious QR code (quishing) detection
+- `logo` — brand logo impersonation (also used by Member 4's FraudReportsPage)
+
+**Flow:**
+1. User selects indicator type and enters a value
+2. `scanIndicator()` from `scannerService.ts` is called
+3. Results display: risk score (0–100), confidence (Low/Medium/High), threat category, OSINT data, rule breakdown, evidence signals, recommended action
+4. User can: submit as fraud report (`addFraudReport()`), add to blocklist (`addToBlocklist()`), view in Evidence Passport (`onSelectReportForPassport()`)
+
+**Props from `App.tsx`:**
+- `onNavigate: (view: string) => void`
+- `onSelectReportForPassport: (reportId: string) => void`
+
+### 2. Protected Browsing (`ProtectedBrowsingPage.tsx`)
+
+- Receives `initialUrl` prop from `App.tsx` (set by blocklist "Open in Protected Browsing" action or `?url=` query param)
+- Runs the URL through blocklist check (`blocklist` from `useData()`)
+- Displays risk assessment: BLOCKED / HIGH RISK / MEDIUM RISK / SAFE badges
+- "Proceed Anyway" / "Go Back to Safety" decision flow
+- Also supports manual URL entry
+
+**Props from `App.tsx`:**
+- `initialUrl: string`
+- `onNavigate: (view: string) => void`
+
+### 3. Blocklist (`BlocklistPage.tsx`)
+
+- Reads `blocklist` from `useData()`
+- Displays: indicator value, type, risk score, threat category, reason, expiry, blocked-by, status
+- Actions:
+  - Search/filter by type, status
+  - "Unblock" → calls `removeFromBlocklist(id)` from `useData()`
+  - "Open in Protected Browsing" → calls `onOpenProtectedUrl(url)` from `App.tsx`
+
+**Props from `App.tsx`:**
+- `onNavigate: (view: string) => void`
+- `onOpenProtectedUrl: (url: string) => void`
+
+### 4. Sentinel Chatbot (`SentinelChatbot.tsx`)
+
+Floating widget, always visible across the dashboard (rendered in `App.tsx`):
+
+**ChatContext it builds from live data:**
+- Company name, user role/name
+- Total/pending/confirmed reports counts
+- Blocked URLs list and count
+- Failed logins count, restricted accounts list
+- Recent alerts (last 5)
+- Recent high-risk reports (last 5)
+- Federated learning global accuracy
+
+**Gemini flow:**
+1. User types a message
+2. `askSentinel(prompt, history, context)` from `geminiService.ts` is called
+3. Response includes: `message`, `sources?`, `recommended_action?`, `action_proposal?`
+4. Action proposals can be: `send_alert` / `block_url` / `restrict_user` — rendered as confirm/cancel buttons
+5. On confirm: calls `dispatchHeadAlert()` or `addToBlocklist()` from `useData()`
+6. Messages saved via `saveChatMessage()` from `useData()`
+
+**Props from `App.tsx`:**
+- `isOpen: boolean`
+- `onToggle: () => void`
+
+### 5. Scanner Service (`scannerService.ts`)
+
+Core threat detection engine — pure TypeScript, no React:
+
+**Exported functions:**
+- `cleanDomain(input)` — strips protocol, www, paths, ports
+- `detectHomoglyphs(domain)` — maps Cyrillic/Greek/lookalike characters to Latin equivalents
+- `scanIndicator(indicator, type, officialAssets, blocklist)` → returns `ScanResult`
+
+**`ScanResult` object includes:**
+- `risk_score` (0–100), `confidence`, `threat_category`
+- `is_official`, `is_blocked`, `target_brand`
+- `evidence_signals[]` — human-readable signal descriptions
+- `osint_data` — domain age, registrar, DNS, MX, SSL, geo, IP (all simulated)
+- `breakdown[]` — per-rule score impact table
+- `explanation`, `recommended_action`
+
+**Scoring rules applied:**
+- Domain age < 30 days → +30
+- Suspicious TLD (`.xyz`, `.top`, `.live`, etc.) → +20
+- Sensitive keyword in URL (`login`, `secure`, `kyc`, etc.) → +15
+- Homoglyph/Cyrillic character detected → +25
+- Exact brand match in domain → +30
+- Already in blocklist → risk_score = 100
+
+### 6. Gemini Service (`geminiService.ts`)
+
+- `askSentinel(prompt, history, context)` — `POST /api/gemini/chat` to backend
+- If backend unavailable (503 or network error) → falls back to `generateIntelligentFallback(prompt, context)`
+- The fallback engine parses keywords from the prompt and constructs context-aware responses using live app data
+
+### 7. Backend Server (`server.ts`)
+
+- Express app on port 3000
+- Initializes `GoogleGenAI` from `@google/genai` using `GEMINI_API_KEY` env var
+- `POST /api/gemini/chat` endpoint:
+  - Accepts `{ prompt, history, context }`
+  - Builds a system instruction prompt with company context
+  - Calls Gemini `generateContent` with multi-turn history
+  - Returns `{ message, sources, recommended_action, action_proposal }`
+- Also proxies Vite dev server for frontend assets in development mode
+- Returns 503 if `GEMINI_API_KEY` is not set (triggers client-side fallback)
+
+**To enable real Gemini AI:** Copy `.env.example` to `.env` and add your `GEMINI_API_KEY`.
+
+---
+
+## Key Dependencies (Read-Only — Do Not Edit)
+
+| File | Owner | What You Use From It |
+|------|-------|----------------------|
+| `src/context/AuthContext.tsx` | **Member 2** | `useAuth()` — `currentUser`, `currentCompany` |
+| `src/context/DataContext.tsx` | **Member 5** | `useData()` — `blocklist`, `reports`, `alerts`, `loginAttempts`, `federatedRounds`, `addFraudReport`, `addToBlocklist`, `removeFromBlocklist`, `dispatchHeadAlert`, `saveChatMessage` |
+| `src/types/index.ts` | **Member 5** | `IndicatorType`, `ThreatCategory`, `BlocklistItem`, `FraudReport`, `ChatMessage`, `SecurityAlert` |
+| `src/services/intelligenceService.ts` | **Member 4** | `BRAND_REGISTRY_DATABASE` — used in `scannerService.ts` for brand matching |
+
+---
+
+## Shared File You Contribute To (Coordinate Changes)
+
+- **`server.ts`** — Owned by you. If you change the API route path or response structure of `/api/gemini/chat`, notify Member 5 (who manages `.env.example` and deployment config).
+- **`src/services/scannerService.ts`** — Owned by you. `ThreatScannerPage.tsx` and potentially `ProtectedBrowsingPage.tsx` import from it. If you change the `ScanResult` interface, update all usages.
+
+---
+
+## Notes
+
+- The `HOMOGLYPH_MAP` in `scannerService.ts` covers Cyrillic, Greek, and common digit-letter substitutions (`0`→`o`, `1`→`l`, etc.)
+- `SUSPICIOUS_TLDS` list: `.xyz`, `.top`, `.live`, `.club`, `.biz`, `.online`, `.cc`, `.info`, `.work`, `.click`, `.fit`, `.stream`, `.cfd`, `.quest`
+- `SENSITIVE_KEYWORDS`: `login`, `signin`, `verify`, `secure`, `update`, `kyc`, `payment`, `refund`, `dispute`, `account`, `wallet`, `sso`, `auth`, `otp`, `billing`, `portal`, `claim`, `bonus`, `ebank`, `support`, `token`
+- The chatbot widget is `z-index: 50` — it floats above all page content
+- `SentinelChatbot.tsx` stores chat history in `DataContext` (persistent across views but cleared on `clearChatHistory()`)
